@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import '../product_manager.dart';
-import 'products_admin.dart';
 
 class ProductsPage extends StatelessWidget {
+  final List<Map<String, dynamic>> products;
+
+  ProductsPage(this.products);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -14,21 +17,17 @@ class ProductsPage extends StatelessWidget {
               title: Text('Choose'),
             ),
             ListTile(
-              title: Text('Manage Product'),
-              onTap: () {
-                Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => ProductsAdminPage()));
-              },
-            )
+                title: Text('Manage Product'),
+                onTap: () {
+                  Navigator.pushReplacementNamed(context, '/admin');
+                }),
           ],
         ),
       ),
       appBar: AppBar(
         title: Text('Hello world'),
       ),
-      body: ProductManager(),
+      body: ProductManager(products),
     );
   }
 }
