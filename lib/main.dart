@@ -3,8 +3,10 @@ import 'pages/auth.dart';
 import 'pages/products_admin.dart';
 import 'pages/products.dart';
 import 'pages/product.dart';
+//import 'package:flutter/rendering.dart';
 
 void main() {
+//  debugPaintSizeEnabled = true;
   runApp(MyApp());
 }
 
@@ -54,7 +56,10 @@ class _MyAppState extends State<MyApp> {
           final int index = int.parse(pathElements[2]);
           return MaterialPageRoute<bool>(builder: (BuildContext context) {
             return ProductPage(
-                _products[index]['title'], _products[index]['image']);
+                _products[index]['title'],
+                _products[index]['image'],
+                _products[index]['price'],
+                _products[index]['description']);
           });
         }
         return null;
