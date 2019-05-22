@@ -34,12 +34,12 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
+        buttonColor: Colors.deepPurple,
         primarySwatch: Colors.deepOrange,
         accentColor: Colors.deepPurple,
         brightness: Brightness.light,
       ),
       // home: AuthPage(),
-
       routes: {
         '/': (BuildContext context) => AuthPage(),
         '/products': (BuildContext context) => ProductsPage(_products),
