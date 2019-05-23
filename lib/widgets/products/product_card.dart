@@ -3,7 +3,7 @@ import 'package:scoped_model/scoped_model.dart';
 
 import 'price_tag.dart';
 import 'address_tag.dart';
-import '../../scoped-models/products.dart';
+import '../../scoped-models/main.dart';
 import '../ui_elements/title_default.dart';
 import '../../models/product.dart';
 
@@ -40,10 +40,10 @@ class ProductCard extends StatelessWidget {
                 .pushNamed<bool>('/product/${productIndex.toString()}');
           },
         ),
-        ScopedModelDescendant<ProductsModel>(
-          builder: (BuildContext context, Widget child, ProductsModel model) {
+        ScopedModelDescendant<MainModel>(
+          builder: (BuildContext context, Widget child, MainModel model) {
             return IconButton(
-              icon: Icon(model.products[productIndex].isFavorite
+              icon: Icon(model.allProducts[productIndex].isFavorite
                   ? Icons.favorite
                   : Icons.favorite_border),
               color: Colors.red,
@@ -69,6 +69,7 @@ class ProductCard extends StatelessWidget {
           ),
           _buildTitlePriceRow(),
           AddressTag('Union Square, San Francisco'),
+          Text(product.userEmail),
           _buildActionButtons(context),
         ],
       ),
