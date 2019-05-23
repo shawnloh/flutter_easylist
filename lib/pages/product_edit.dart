@@ -100,7 +100,20 @@ class _ProductEditPageState extends State<ProductEditPage> {
     final double deviceWidth = MediaQuery.of(context).size.width;
     final double targetWidth = deviceWidth > 550.0 ? 500.0 : deviceWidth * 0.95;
     final double targetPadding = deviceWidth - targetWidth;
-    final Widget pageContent = GestureDetector(
+    final Widget pageContent = _buildPageContent(context, targetPadding);
+    return widget.product == null
+        ? pageContent
+        : Scaffold(
+            appBar: AppBar(
+              title: Text('Edit Product'),
+            ),
+            body: pageContent,
+          );
+  }
+
+  GestureDetector _buildPageContent(
+      BuildContext context, double targetPadding) {
+    return GestureDetector(
       onTap: () {
         FocusScope.of(context).requestFocus(FocusNode());
       },
@@ -127,13 +140,5 @@ class _ProductEditPageState extends State<ProductEditPage> {
         ),
       ),
     );
-    return widget.product == null
-        ? pageContent
-        : Scaffold(
-            appBar: AppBar(
-              title: Text('Edit Product'),
-            ),
-            body: pageContent,
-          );
   }
 }
