@@ -160,9 +160,8 @@ class _ProductEditPageState extends State<ProductEditPage> {
             price: _formData['price'],
             image: _formData['image']),
       );
-//      Navigator.pop(context);
     }
-
+    Navigator.pop(context);
     Navigator.pushReplacementNamed(context, '/products');
   }
 
