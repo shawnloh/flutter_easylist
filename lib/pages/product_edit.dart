@@ -184,8 +184,11 @@ class _ProductEditPageState extends State<ProductEditPage> {
       builder: (BuildContext context, Widget child, MainModel model) {
         final Widget pageContent =
             _buildPageContent(context, model.selectedProduct);
+
         return model.selectedProductIndex == -1
-            ? pageContent
+            ? Material(
+                child: pageContent,
+              )
             : Scaffold(
                 appBar: AppBar(
                   title: Text('Edit Product'),
