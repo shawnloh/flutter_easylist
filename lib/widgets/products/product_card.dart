@@ -29,33 +29,32 @@ class ProductCard extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return ButtonBar(
-      alignment: MainAxisAlignment.center,
-      children: <Widget>[
-        IconButton(
-          icon: Icon(Icons.info),
-          color: Colors.blue,
-          onPressed: () {
-            Navigator.of(context)
-                .pushNamed<bool>('/product/${productIndex.toString()}');
-          },
-        ),
-        ScopedModelDescendant<MainModel>(
-          builder: (BuildContext context, Widget child, MainModel model) {
-            return IconButton(
-              icon: Icon(model.allProducts[productIndex].isFavorite
-                  ? Icons.favorite
-                  : Icons.favorite_border),
-              color: Colors.red,
-              onPressed: () {
-                model.selectProduct(productIndex);
-                model.toggleProductFavourite();
-              },
-            );
-          },
-        ),
-      ],
-    );
+    return ScopedModelDescendant<MainModel>(
+        builder: (BuildContext context, Widget child, MainModel model) {
+      return ButtonBar(
+        alignment: MainAxisAlignment.center,
+        children: <Widget>[
+          IconButton(
+            icon: Icon(Icons.info),
+            color: Colors.blue,
+            onPressed: () {
+              Navigator.of(context).pushNamed<bool>(
+                  '/product/${model.allProducts[productIndex].id}');
+            },
+          ),
+          IconButton(
+            icon: Icon(model.allProducts[productIndex].isFavorite
+                ? Icons.favorite
+                : Icons.favorite_border),
+            color: Colors.red,
+            onPressed: () {
+              model.selectProduct(model.allProducts[productIndex].id);
+              model.toggleProductFavourite();
+            },
+          )
+        ],
+      );
+    });
   }
 
   @override
@@ -63,7 +62,12 @@ class ProductCard extends StatelessWidget {
     return Card(
       child: Column(
         children: <Widget>[
-          Image.network(product.image),
+          FadeInImage(
+            image: NetworkImage(product.image),
+            height: 300.0,
+            fit: BoxFit.cover,
+            placeholder: AssetImage('assets/food.jpg'),
+          ),
           SizedBox(
             height: 20.0,
           ),
