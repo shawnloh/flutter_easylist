@@ -35,7 +35,6 @@ mixin ProductsModel on ConnectedProductsModel {
     return _showFavorites;
   }
 
-
   Future<bool> addProduct(
       String title, String description, String image, double price) async {
     _isLoading = true;
@@ -44,7 +43,7 @@ mixin ProductsModel on ConnectedProductsModel {
       'title': title,
       'description': description,
       'image':
-      'https://www.capetownetc.com/wp-content/uploads/2018/06/Choc_1.jpeg',
+          'https://www.capetownetc.com/wp-content/uploads/2018/06/Choc_1.jpeg',
       'price': price,
       'userEmail': _authenticatedUser.email,
       'userId': _authenticatedUser.id,
@@ -199,8 +198,8 @@ mixin ProductsModel on ConnectedProductsModel {
         price: selectedProduct.price,
         image: selectedProduct.image,
         isFavorite: newFavouriteStatus,
-        userId: _authenticatedUser.id,
-        userEmail: _authenticatedUser.email);
+        userId: selectedProduct.userId,
+        userEmail: selectedProduct.userEmail);
     _products[selectedProductIndex] = updatedProduct;
 
     notifyListeners();
@@ -220,6 +219,40 @@ mixin UserModel on ConnectedProductsModel {
       password: password,
     );
   }
+
+  Future<Map<String, dynamic>> signup(String email, String password) async {
+    _isLoading = true;
+    notifyListeners();
+    Map<String, dynamic> authData = {
+      'email': email,
+      'password': password,
+      'returnSecureToken': true,
+    };
+
+    final http.Response response = await http.post(
+      'https://www.googleapis.com/identitytoolkit/v3/relyingparty/signupNewUser?key=AIzaSyCjttT_uoD6BWCKpUoZPDapz-P9u7HdDWs',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(authData),
+    );
+    final Map<String, dynamic> responseData = json.decode(response.body);
+    bool success = false;
+    String message = 'Something went wrong';
+
+    if (responseData.containsKey('idToken')) {
+      success = true;
+      message = 'Authentication succeeded!';
+    } else if (responseData['error']['message'] == 'EMAIL_EXISTS') {
+      message = 'This email already exists';
+    }
+    _isLoading = false;
+    notifyListeners();
+    return {
+      'success': success,
+      'message': message,
+    };
+  }
 }
 
 mixin ConnectedProductsModel on Model {
@@ -227,7 +260,6 @@ mixin ConnectedProductsModel on Model {
   String _selProductId;
   User _authenticatedUser;
   bool _isLoading = false;
-
 }
 
 mixin UtilityModel on ConnectedProductsModel {
