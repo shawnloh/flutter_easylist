@@ -17,7 +17,8 @@ class _ProductEditPageState extends State<ProductEditPage> {
     'title': null,
     'description': null,
     'price': null,
-    'image': 'assets/food.jpg'
+    'image':
+        'https://www.capetownetc.com/wp-content/uploads/2018/06/Choc_1.jpeg'
   };
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -75,6 +76,11 @@ class _ProductEditPageState extends State<ProductEditPage> {
   Widget _buildSubmitButton() {
     return ScopedModelDescendant<MainModel>(
       builder: (BuildContext context, Widget child, MainModel model) {
+        if (model.isLoading) {
+          return Center(
+            child: CircularProgressIndicator(),
+          );
+        }
         return RaisedButton(
           child: Text('Save'),
           textColor: Colors.white,
@@ -127,19 +133,23 @@ class _ProductEditPageState extends State<ProductEditPage> {
         _formData['description'],
         _formData['image'],
         _formData['price'],
-      );
+      ).then((_) {
+        Navigator.pushReplacementNamed(context, '/products').then((_) {
+          setSelectedProduct(null);
+        });
+      });
     } else {
       updateProduct(
         _formData['title'],
         _formData['description'],
         _formData['image'],
         _formData['price'],
-      );
+      ).then((_) {
+        Navigator.pushReplacementNamed(context, '/products').then((_) {
+          setSelectedProduct(null);
+        });
+      });
     }
-
-    Navigator.pushReplacementNamed(context, '/products').then((_) {
-      setSelectedProduct(null);
-    });
   }
 
   @override

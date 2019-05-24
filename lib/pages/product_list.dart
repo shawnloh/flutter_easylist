@@ -3,43 +3,59 @@ import 'package:scoped_model/scoped_model.dart';
 import '../scoped-models/main.dart';
 import 'product_edit.dart';
 
-class ProductListPage extends StatelessWidget {
+class ProductListPage extends StatefulWidget {
+  final MainModel model;
+
+  ProductListPage(this.model);
+
+  @override
+  _ProductListPageState createState() => _ProductListPageState();
+}
+
+class _ProductListPageState extends State<ProductListPage> {
+
+  @override
+  void initState() {
+    widget.model.fetchProducts();
+    super.initState();
+  }
+
   @override
   Widget build(BuildContext context) {
     return ScopedModelDescendant<MainModel>(
         builder: (BuildContext context, Widget child, MainModel model) {
-      return ListView.builder(
-          itemCount: model.allProducts.length,
-          itemBuilder: (BuildContext context, int index) {
-            return Dismissible(
-              key: Key(model.allProducts[index].title),
-              child: Column(
-                children: <Widget>[
-                  ListTile(
-                    leading: CircleAvatar(
-                      backgroundImage:
-                          AssetImage(model.allProducts[index].image),
-                    ),
-                    title: Text(model.allProducts[index].title),
-                    subtitle:
+          return ListView.builder(
+              itemCount: model.allProducts.length,
+              itemBuilder: (BuildContext context, int index) {
+                return Dismissible(
+                  key: Key(model.allProducts[index].title),
+                  child: Column(
+                    children: <Widget>[
+                      ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage:
+                          NetworkImage(model.allProducts[index].image),
+                        ),
+                        title: Text(model.allProducts[index].title),
+                        subtitle:
                         Text('\$${model.allProducts[index].price.toString()}'),
-                    trailing: _buildEditButton(context, index, model),
+                        trailing: _buildEditButton(context, index, model),
+                      ),
+                      Divider(),
+                    ],
                   ),
-                  Divider(),
-                ],
-              ),
-              background: Container(
-                color: Colors.red,
-              ),
-              onDismissed: (DismissDirection direction) {
-                if (direction == DismissDirection.endToStart) {
-                  model.selectProduct(index);
-                  model.deleteProduct();
-                }
-              },
-            );
-          });
-    });
+                  background: Container(
+                    color: Colors.red,
+                  ),
+                  onDismissed: (DismissDirection direction) {
+                    if (direction == DismissDirection.endToStart) {
+                      model.selectProduct(index);
+                      model.deleteProduct();
+                    }
+                  },
+                );
+              });
+        });
   }
 
   Widget _buildEditButton(BuildContext context, int index, MainModel model) {
@@ -57,3 +73,4 @@ class ProductListPage extends StatelessWidget {
     );
   }
 }
+
