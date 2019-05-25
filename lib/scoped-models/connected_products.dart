@@ -157,7 +157,7 @@ mixin ProductsModel on ConnectedProductsModel {
     notifyListeners();
   }
 
-  Future<Null> fetchProducts() {
+  Future<Null> fetchProducts({onlyForUser = false}) {
     _isLoading = true;
 
     return http
@@ -174,17 +174,25 @@ mixin ProductsModel on ConnectedProductsModel {
       }
       productListData.forEach((String productId, dynamic productData) {
         final Product product = Product(
-          id: productId,
-          title: productData['title'],
-          description: productData['description'],
-          image: productData['image'],
-          price: productData['price'],
-          userEmail: productData['userEmail'],
-          userId: productData['userId'],
-        );
+            id: productId,
+            title: productData['title'],
+            description: productData['description'],
+            image: productData['image'],
+            price: productData['price'],
+            userEmail: productData['userEmail'],
+            userId: productData['userId'],
+            isFavorite: productData['wishlistUsers'] == null
+                ? false
+                : (productData['wishlistUsers'] as Map<String, dynamic>)
+                    .containsKey(_authenticatedUser.id));
         fetchedProductList.add(product);
       });
       _products = fetchedProductList;
+      if (onlyForUser) {
+        _products = fetchedProductList.where((Product product) {
+          return product.userId == _authenticatedUser.id;
+        }).toList();
+      }
       _isLoading = false;
       notifyListeners();
       _selProductId = null;
@@ -195,7 +203,7 @@ mixin ProductsModel on ConnectedProductsModel {
     });
   }
 
-  void toggleProductFavourite() {
+  void toggleProductFavourite() async {
     final bool isCurrentlyFavourite = selectedProduct.isFavorite;
     final bool newFavouriteStatus = !isCurrentlyFavourite;
     final Product updatedProduct = Product(
@@ -208,8 +216,32 @@ mixin ProductsModel on ConnectedProductsModel {
         userId: selectedProduct.userId,
         userEmail: selectedProduct.userEmail);
     _products[selectedProductIndex] = updatedProduct;
-
     notifyListeners();
+
+    http.Response response;
+    if (newFavouriteStatus) {
+      response = await http.put(
+        'https://flutter-product-fe28f.firebaseio.com/products/${selectedProduct.id}/wishlistUsers/${_authenticatedUser.id}.json?auth=${_authenticatedUser.token}',
+        body: json.encode(true),
+      );
+    } else {
+      response = await http.delete(
+          'https://flutter-product-fe28f.firebaseio.com/products/${selectedProduct.id}/wishlistUsers/${_authenticatedUser.id}.json?auth=${_authenticatedUser.token}');
+    }
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final Product updatedProduct = Product(
+          id: selectedProduct.id,
+          title: selectedProduct.title,
+          description: selectedProduct.description,
+          price: selectedProduct.price,
+          image: selectedProduct.image,
+          isFavorite: !newFavouriteStatus,
+          userId: selectedProduct.userId,
+          userEmail: selectedProduct.userEmail);
+      _products[selectedProductIndex] = updatedProduct;
+
+      notifyListeners();
+    }
   }
 
   void toggleDisplayMode() {
