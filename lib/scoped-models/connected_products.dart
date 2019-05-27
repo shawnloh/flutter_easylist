@@ -9,6 +9,7 @@ import 'package:rxdart/subjects.dart';
 import '../models/product.dart';
 import '../models/user.dart';
 import '../models/auth.dart';
+import '../models/location_data.dart';
 
 mixin ProductsModel on ConnectedProductsModel {
   bool _showFavorites = false;
@@ -41,8 +42,8 @@ mixin ProductsModel on ConnectedProductsModel {
     return _showFavorites;
   }
 
-  Future<bool> addProduct(
-      String title, String description, String image, double price) async {
+  Future<bool> addProduct(String title, String description, String image,
+      double price, LocationData locData) async {
     _isLoading = true;
     notifyListeners();
     final Map<String, dynamic> productData = {
@@ -53,6 +54,9 @@ mixin ProductsModel on ConnectedProductsModel {
       'price': price,
       'userEmail': _authenticatedUser.email,
       'userId': _authenticatedUser.id,
+      'loc_lat': locData.latitude,
+      'loc_lng': locData.longitude,
+      'loc_address': locData.address,
     };
 
     try {
@@ -69,13 +73,15 @@ mixin ProductsModel on ConnectedProductsModel {
       final Map<String, dynamic> responseData = json.decode(response.body);
 
       final Product newProduct = Product(
-          id: responseData['name'],
-          title: title,
-          description: description,
-          image: image,
-          price: price,
-          userEmail: _authenticatedUser.email,
-          userId: _authenticatedUser.id);
+        id: responseData['name'],
+        title: title,
+        description: description,
+        image: image,
+        price: price,
+        userEmail: _authenticatedUser.email,
+        userId: _authenticatedUser.id,
+        location: locData,
+      );
       _products.add(newProduct);
       _isLoading = false;
       notifyListeners();
@@ -88,7 +94,7 @@ mixin ProductsModel on ConnectedProductsModel {
   }
 
   Future<bool> updateProduct(
-      String title, String description, String image, double price) {
+      String title, String description, String image, double price, LocationData locData) {
     _isLoading = true;
     notifyListeners();
     final Map<String, dynamic> updateData = {
@@ -99,6 +105,9 @@ mixin ProductsModel on ConnectedProductsModel {
       'price': price,
       'userEmail': selectedProduct.userEmail,
       'userId': selectedProduct.userId,
+      'loc_address': locData.address,
+      'loc_lat': locData.latitude,
+      'loc_lng': locData.longitude,
     };
     return http
         .put(
@@ -114,6 +123,7 @@ mixin ProductsModel on ConnectedProductsModel {
         price: price,
         userEmail: selectedProduct.userEmail,
         userId: selectedProduct.userId,
+        location: locData
       );
 
       _products[selectedProductIndex] = updatedProduct;
@@ -139,7 +149,7 @@ mixin ProductsModel on ConnectedProductsModel {
 
     return http
         .delete(
-            'https://flutter-product-fe28f.firebaseio.com/products/${deletedProductId}.json?auth=${_authenticatedUser.token}')
+            'https://flutter-product-fe28f.firebaseio.com/products/$deletedProductId.json?auth=${_authenticatedUser.token}')
         .then((http.Response response) {
       _isLoading = false;
 
@@ -154,7 +164,9 @@ mixin ProductsModel on ConnectedProductsModel {
 
   void selectProduct(String productId) {
     _selProductId = productId;
-    notifyListeners();
+    if (productId != null) {
+      notifyListeners();
+    }
   }
 
   Future<Null> fetchProducts({onlyForUser = false}) {
@@ -179,6 +191,8 @@ mixin ProductsModel on ConnectedProductsModel {
             description: productData['description'],
             image: productData['image'],
             price: productData['price'],
+            location: LocationData(productData['loc_lat'],
+                productData['loc_lng'], productData['loc_address']),
             userEmail: productData['userEmail'],
             userId: productData['userId'],
             isFavorite: productData['wishlistUsers'] == null
@@ -211,6 +225,7 @@ mixin ProductsModel on ConnectedProductsModel {
         title: selectedProduct.title,
         description: selectedProduct.description,
         price: selectedProduct.price,
+        location: selectedProduct.location,
         image: selectedProduct.image,
         isFavorite: newFavouriteStatus,
         userId: selectedProduct.userId,
@@ -234,6 +249,7 @@ mixin ProductsModel on ConnectedProductsModel {
           title: selectedProduct.title,
           description: selectedProduct.description,
           price: selectedProduct.price,
+          location: selectedProduct.location,
           image: selectedProduct.image,
           isFavorite: !newFavouriteStatus,
           userId: selectedProduct.userId,
