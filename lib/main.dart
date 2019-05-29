@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:scoped_model/scoped_model.dart';
 
 import 'pages/auth.dart';
@@ -23,10 +24,24 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   final MainModel _model = MainModel();
+  final _platformChannel = MethodChannel('betterwith.tech/battery');
   bool _isAuthenticated = false;
+
+  Future<Null> _getBatteryLevel() async {
+    String batteryLevel;
+    try {
+      final int result =
+          await _platformChannel.invokeMethod<int>('getBatteryLevel');
+      batteryLevel = 'Battery level is $result %.';
+    } catch (error) {
+      batteryLevel = 'Failed to get battery level';
+    }
+    print(batteryLevel);
+  }
 
   @override
   void initState() {
+    _getBatteryLevel();
     _model.autoAuthenticate();
     _model.userSubject.listen((bool isAuthenticated) {
       setState(() {
@@ -41,6 +56,7 @@ class _MyAppState extends State<MyApp> {
     return ScopedModel<MainModel>(
       model: _model,
       child: MaterialApp(
+        title: 'EasyList',
         theme: getAdaptiveThemeData(context),
         // home: AuthPage(),
         routes: {
