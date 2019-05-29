@@ -1,11 +1,14 @@
+import 'dart:io';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-
 import 'package:scoped_model/scoped_model.dart';
 
 import '../models/product.dart';
 import '../scoped-models/main.dart';
 import '../widgets/form_inputs/location.dart';
+import '../widgets/form_inputs/image.dart';
 import '../models/location_data.dart';
+import '../widgets/ui_elements/adaptive_progress_indicator.dart';
 
 class ProductEditPage extends StatefulWidget {
   @override
@@ -20,15 +23,23 @@ class _ProductEditPageState extends State<ProductEditPage> {
     'description': null,
     'price': null,
     'location': null,
-    'image':
-        'https://www.capetownetc.com/wp-content/uploads/2018/06/Choc_1.jpeg'
+    'image': null,
   };
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final _titleTextController = TextEditingController();
+  final _descriptionTextController = TextEditingController();
+  final _priceTextController = TextEditingController();
 
   Widget _buildTitleTextField(Product product) {
+    if (product == null && _titleTextController.text.trim() == '') {
+      _titleTextController.text = '';
+    } else if (product != null && _titleTextController.text.trim() == '') {
+      _titleTextController.text = product.title;
+    }
     return TextFormField(
+      controller: _titleTextController,
       decoration: InputDecoration(labelText: 'Product Title'),
-      initialValue: product == null ? '' : product.title,
+//      initialValue: product == null ? '' : product.title,
       validator: (String value) {
         // if (value.trim().length <= 0) {
         if (value.isEmpty || value.length < 5) {
@@ -42,10 +53,17 @@ class _ProductEditPageState extends State<ProductEditPage> {
   }
 
   Widget _buildDescriptionTextField(Product product) {
+    if (product == null && _descriptionTextController.text.trim() == '') {
+      _descriptionTextController.text = '';
+    } else if (product != null &&
+        _descriptionTextController.text.trim() == '') {
+      _descriptionTextController.text = product.description;
+    }
     return TextFormField(
       maxLines: 4,
       decoration: InputDecoration(labelText: 'Product Description'),
-      initialValue: product == null ? '' : product.description,
+//      initialValue: product == null ? '' : product.description,
+      controller: _descriptionTextController,
       validator: (String value) {
         // if (value.trim().length <= 0) {
         if (value.isEmpty || value.length < 10) {
@@ -59,14 +77,20 @@ class _ProductEditPageState extends State<ProductEditPage> {
   }
 
   Widget _buildPriceTextField(Product product) {
+    if (product == null && _priceTextController.text.trim() == '') {
+      _priceTextController.text = '';
+    } else if (product != null && _priceTextController.text.trim() == '') {
+      _priceTextController.text = product.price.toString();
+    }
     return TextFormField(
-      keyboardType: TextInputType.number,
+      keyboardType: TextInputType.numberWithOptions(decimal: true),
       decoration: InputDecoration(labelText: 'Product Price'),
-      initialValue: product == null ? '' : product.price.toString(),
+//      initialValue: product == null ? '' : product.price.toString(),
+      controller: _priceTextController,
       validator: (String value) {
         // if (value.trim().length <= 0) {
         if (value.isEmpty ||
-            !RegExp(r'^(?:[1-9]\d*|0)?(?:\.\d+)?$').hasMatch(value)) {
+            !RegExp(r'^(?:[1-9]\d*|0)?(?:[.]\d+)?$').hasMatch(value)) {
           return 'Price is required and should be a number.';
         }
       },
@@ -81,7 +105,7 @@ class _ProductEditPageState extends State<ProductEditPage> {
       builder: (BuildContext context, Widget child, MainModel model) {
         if (model.isLoading) {
           return Center(
-            child: CircularProgressIndicator(),
+            child: AdaptiveProgressIndicator(),
           );
         }
         return RaisedButton(
@@ -119,6 +143,10 @@ class _ProductEditPageState extends State<ProductEditPage> {
               SizedBox(
                 height: 10.0,
               ),
+              ImageInput(_setImage, product),
+              SizedBox(
+                height: 10.0,
+              ),
               _buildSubmitButton(),
             ],
           ),
@@ -131,19 +159,25 @@ class _ProductEditPageState extends State<ProductEditPage> {
     _formData['location'] = locData;
   }
 
+  void _setImage(File image) {
+    _formData['image'] = image;
+  }
+
   void _submitForm(
       Function addProduct, Function updateProduct, Function setSelectedProduct,
       [int selectedProductIndex]) {
-    if (!_formKey.currentState.validate()) {
+    if (!_formKey.currentState.validate() ||
+        (_formData['image'] == null && selectedProductIndex == -1)) {
       return;
     }
+
     _formKey.currentState.save();
     if (selectedProductIndex == -1) {
       addProduct(
-        _formData['title'],
-        _formData['description'],
+        _titleTextController.text,
+        _descriptionTextController.text,
         _formData['image'],
-        _formData['price'],
+        double.parse(_priceTextController.text),
         _formData['location'],
       ).then((bool success) {
         if (success) {
@@ -156,10 +190,10 @@ class _ProductEditPageState extends State<ProductEditPage> {
       });
     } else {
       updateProduct(
-        _formData['title'],
-        _formData['description'],
+        _titleTextController.text,
+        _descriptionTextController.text,
         _formData['image'],
-        _formData['price'],
+        double.parse(_priceTextController.text),
         _formData['location'],
       ).then((bool success) {
         if (success) {

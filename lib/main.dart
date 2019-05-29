@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:scoped_model/scoped_model.dart';
 
-
 import 'pages/auth.dart';
 import 'pages/products_admin.dart';
 import 'pages/products.dart';
 import 'pages/product.dart';
 import 'models/product.dart';
 import 'scoped-models/main.dart';
+import 'widgets/helpers/custom_route.dart';
+import 'shared/adaptive_theme.dart';
 //import 'package:flutter/rendering.dart';
 
 void main() {
@@ -37,16 +38,10 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    print('build main page');
     return ScopedModel<MainModel>(
       model: _model,
       child: MaterialApp(
-        theme: ThemeData(
-          buttonColor: Colors.deepPurple,
-          primarySwatch: Colors.deepOrange,
-          accentColor: Colors.deepPurple,
-          brightness: Brightness.light,
-        ),
+        theme: getAdaptiveThemeData(context),
         // home: AuthPage(),
         routes: {
           '/': (BuildContext context) =>
@@ -72,7 +67,7 @@ class _MyAppState extends State<MyApp> {
                 _model.allProducts.firstWhere((Product product) {
               return product.id == productId;
             });
-            return MaterialPageRoute<bool>(builder: (BuildContext context) {
+            return CustomRoute<bool>(builder: (BuildContext context) {
               return !_isAuthenticated ? AuthPage() : ProductPage(product);
             });
           }

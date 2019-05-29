@@ -13,15 +13,13 @@ class ProductListPage extends StatefulWidget {
 }
 
 class _ProductListPageState extends State<ProductListPage> {
-
   @override
   void initState() {
-    widget.model.fetchProducts(onlyForUser: true);
+    widget.model.fetchProducts(onlyForUser: true, clearExisting: true);
     super.initState();
   }
 
   Widget _buildEditButton(BuildContext context, int index, MainModel model) {
-
     return IconButton(
       icon: Icon(Icons.edit),
       onPressed: () {
@@ -40,40 +38,37 @@ class _ProductListPageState extends State<ProductListPage> {
   Widget build(BuildContext context) {
     return ScopedModelDescendant<MainModel>(
         builder: (BuildContext context, Widget child, MainModel model) {
-          return ListView.builder(
-              itemCount: model.allProducts.length,
-              itemBuilder: (BuildContext context, int index) {
-                return Dismissible(
-                  key: Key(model.allProducts[index].title),
-                  child: Column(
-                    children: <Widget>[
-                      ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage:
+      return ListView.builder(
+          itemCount: model.allProducts.length,
+          itemBuilder: (BuildContext context, int index) {
+            return Dismissible(
+              key: Key(model.allProducts[index].title),
+              child: Column(
+                children: <Widget>[
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage:
                           NetworkImage(model.allProducts[index].image),
-                        ),
-                        title: Text(model.allProducts[index].title),
-                        subtitle:
+                    ),
+                    title: Text(model.allProducts[index].title),
+                    subtitle:
                         Text('\$${model.allProducts[index].price.toString()}'),
-                        trailing: _buildEditButton(context, index, model),
-                      ),
-                      Divider(),
-                    ],
+                    trailing: _buildEditButton(context, index, model),
                   ),
-                  background: Container(
-                    color: Colors.red,
-                  ),
-                  onDismissed: (DismissDirection direction) {
-                    if (direction == DismissDirection.endToStart) {
-                      model.selectProduct(model.allProducts[index].id);
-                      model.deleteProduct();
-                    }
-                  },
-                );
-              });
-        });
+                  Divider(),
+                ],
+              ),
+              background: Container(
+                color: Colors.red,
+              ),
+              onDismissed: (DismissDirection direction) {
+                if (direction == DismissDirection.endToStart) {
+                  model.selectProduct(model.allProducts[index].id);
+                  model.deleteProduct();
+                }
+              },
+            );
+          });
+    });
   }
-
-
 }
-

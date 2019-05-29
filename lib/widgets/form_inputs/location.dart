@@ -6,6 +6,7 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:location/location.dart' as geo;
 import '../../models/location_data.dart';
 import '../../models/product.dart';
+import '../../shared/configs.dart';
 
 class LocationInput extends StatefulWidget {
   final Function setLocation;
@@ -49,7 +50,7 @@ class _LocationInputState extends State<LocationInput> {
 
     if (geocode) {
       final Uri uri = Uri.https('eu1.locationiq.com', '/v1/search.php',
-          {'key': 'b6700e435da4e4', 'q': address, 'format': 'json'});
+          {'key': locationApiKey, 'q': address, 'format': 'json'});
 
       final http.Response response = await http.get(uri);
       final decodedResponse = json.decode(response.body);
@@ -105,7 +106,7 @@ class _LocationInputState extends State<LocationInput> {
 
   Future<String> _getAddress(double lat, double lng) async {
     final Uri uri = Uri.https('eu1.locationiq.com', '/v1/reverse.php', {
-      'key': 'b6700e435da4e4',
+      'key': locationApiKey,
       'lat': lat.toString(),
       'lon': lng.toString(),
       'format': 'json'
@@ -114,18 +115,42 @@ class _LocationInputState extends State<LocationInput> {
     final decodedResponse = json.decode(response.body);
     print(decodedResponse);
     final formattedAddress = decodedResponse['display_name'];
+
     return formattedAddress;
   }
 
   void _getUserLocation() async {
     final location = geo.Location();
-    final currentLocation = await location.getLocation();
-    final address =
-        await _getAddress(currentLocation.latitude, currentLocation.longitude);
-    _getStaticMap(address,
-        geocode: false,
-        lat: currentLocation.latitude,
-        lng: currentLocation.longitude);
+    try {
+      final currentLocation = await location.getLocation();
+      final address = await _getAddress(
+          currentLocation.latitude, currentLocation.longitude);
+      setState(() {
+        _getStaticMap(
+          address,
+          geocode: false,
+          lat: currentLocation.latitude,
+          lng: currentLocation.longitude,
+        );
+      });
+    } catch (error) {
+      showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Could not fetch Location'),
+              content: Text('Please add an address manually!'),
+              actions: <Widget>[
+                FlatButton(
+                  child: Text('Okay'),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                )
+              ],
+            );
+          });
+    }
   }
 
   @override
@@ -151,20 +176,22 @@ class _LocationInputState extends State<LocationInput> {
       SizedBox(
         height: 10.0,
       ),
-      SizedBox(
-          width: 500.0,
-          height: 300.0,
-          child: GoogleMap(
-              mapType: MapType.normal,
-              initialCameraPosition: CameraPosition(
-                target: LatLng(41.40337, 2.17403),
-                zoom: 17.0,
-              ),
-              onMapCreated: (GoogleMapController controller) {
-                _controller.complete(controller);
-              },
-              myLocationButtonEnabled: false,
-              markers: markers.toSet()))
+      _locationData != null
+          ? SizedBox(
+              width: 500.0,
+              height: 300.0,
+              child: GoogleMap(
+                  mapType: MapType.normal,
+                  initialCameraPosition: CameraPosition(
+                    target: LatLng(41.40337, 2.17403),
+                    zoom: 17.0,
+                  ),
+                  onMapCreated: (GoogleMapController controller) {
+                    _controller.complete(controller);
+                  },
+                  myLocationButtonEnabled: false,
+                  markers: markers.toSet()))
+          : Container()
     ]);
   }
 }

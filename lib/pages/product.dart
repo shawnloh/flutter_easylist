@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../models/product.dart';
 import '../widgets/ui_elements/title_default.dart';
+import '../widgets/products/product_fab.dart';
 
 class ProductPage extends StatelessWidget {
   final Product product;
@@ -47,11 +48,13 @@ class ProductPage extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: <Widget>[
-        GestureDetector(
-          onTap: _showMap(context),
-          child: Text(
-            address,
-            style: TextStyle(fontFamily: 'Oswald', color: Colors.grey),
+        Flexible(
+          child: GestureDetector(
+            onTap: _showMap(context),
+            child: Text(
+              address,
+              style: TextStyle(fontFamily: 'Oswald', color: Colors.grey),
+            ),
           ),
         ),
         Container(
@@ -61,9 +64,11 @@ class ProductPage extends StatelessWidget {
             style: TextStyle(color: Colors.grey),
           ),
         ),
-        Text(
-          '\$' + price.toString(),
-          style: TextStyle(fontFamily: 'Oswald', color: Colors.grey),
+        Flexible(
+          child: Text(
+            '\$' + price.toString(),
+            style: TextStyle(fontFamily: 'Oswald', color: Colors.grey),
+          ),
         )
       ],
     );
@@ -72,33 +77,48 @@ class ProductPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(product.title),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          FadeInImage(
-            image: NetworkImage(product.image),
-            height: 300.0,
-            fit: BoxFit.cover,
-            placeholder: AssetImage('assets/food.jpg'),
-          ),
-          Container(
-            padding: EdgeInsets.all(10.0),
-            child: TitleDefault(product.title),
-          ),
-          _buildAddressPriceRow(
-              product.location.address, product.price, context),
-          Container(
-            padding: EdgeInsets.all(10.0),
-            child: Text(
-              product.description,
-              textAlign: TextAlign.center,
+//      appBar: AppBar(
+//        title: Text(product.title),
+//      ),
+      body: CustomScrollView(
+        slivers: <Widget>[
+          SliverAppBar(
+            expandedHeight: 256.0,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(product.title),
+              background: Hero(
+                tag: product.id,
+                child: FadeInImage(
+                  image: NetworkImage(product.image),
+                  height: 300.0,
+                  fit: BoxFit.cover,
+                  placeholder: AssetImage('assets/food.jpg'),
+                ),
+              ),
             ),
+          ),
+          SliverList(
+            delegate: SliverChildListDelegate([
+              Container(
+                padding: EdgeInsets.all(10.0),
+                child: TitleDefault(product.title),
+                alignment: Alignment.center,
+              ),
+              _buildAddressPriceRow(
+                  product.location.address, product.price, context),
+              Container(
+                padding: EdgeInsets.all(10.0),
+                child: Text(
+                  product.description,
+                  textAlign: TextAlign.center,
+                ),
+              )
+            ]),
           )
         ],
       ),
+      floatingActionButton: ProductFab(product),
     );
   }
 }

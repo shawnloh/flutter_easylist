@@ -1,10 +1,13 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:io';
 
 import 'package:scoped_model/scoped_model.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:rxdart/subjects.dart';
+import 'package:mime/mime.dart';
+import 'package:http_parser/http_parser.dart';
 
 import '../models/product.dart';
 import '../models/user.dart';
@@ -42,15 +45,55 @@ mixin ProductsModel on ConnectedProductsModel {
     return _showFavorites;
   }
 
-  Future<bool> addProduct(String title, String description, String image,
+  Future<Map<String, dynamic>> uploadImage(File image,
+      {String imagePath}) async {
+    final mimeTypeData = lookupMimeType(image.path).split('/');
+    final imageUploadRequest = http.MultipartRequest(
+        'POST',
+        Uri.parse(
+            'https://us-central1-flutter-product-fe28f.cloudfunctions.net/storeImage'));
+    final file = await http.MultipartFile.fromPath('image', image.path,
+        contentType: MediaType(mimeTypeData[0], mimeTypeData[1]));
+    imageUploadRequest.files.add(file);
+    if (imagePath != null) {
+      imageUploadRequest.fields['imagePath'] = Uri.encodeComponent(imagePath);
+    }
+
+    imageUploadRequest.headers['Authorization'] =
+        'Bearer ${_authenticatedUser.token}';
+
+    try {
+      final streamResponse = await imageUploadRequest.send();
+      final response = await http.Response.fromStream(streamResponse);
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        print('Something went wrong');
+        print(json.decode(response.body));
+        return null;
+      }
+
+      final responseData = json.decode(response.body);
+      return responseData;
+    } catch (error) {
+      print(error);
+      return null;
+    }
+  }
+
+  Future<bool> addProduct(String title, String description, File image,
       double price, LocationData locData) async {
     _isLoading = true;
     notifyListeners();
+    final uploadData = await uploadImage(image);
+    if (uploadData == null) {
+      print('Upload fail');
+      return false;
+    }
+
     final Map<String, dynamic> productData = {
       'title': title,
       'description': description,
-      'image':
-          'https://www.capetownetc.com/wp-content/uploads/2018/06/Choc_1.jpeg',
+      'imagePath': uploadData['imagePath'],
+      'imageUrl': uploadData['imageUrl'],
       'price': price,
       'userEmail': _authenticatedUser.email,
       'userId': _authenticatedUser.id,
@@ -63,7 +106,7 @@ mixin ProductsModel on ConnectedProductsModel {
       final http.Response response = await http.post(
           'https://flutter-product-fe28f.firebaseio.com/products.json?auth=${_authenticatedUser.token}',
           body: json.encode(productData));
-
+      print(response.body);
       if (response.statusCode != 200 && response.statusCode != 201) {
         _isLoading = false;
         notifyListeners();
@@ -76,7 +119,8 @@ mixin ProductsModel on ConnectedProductsModel {
         id: responseData['name'],
         title: title,
         description: description,
-        image: image,
+        image: uploadData['imageUrl'],
+        imagePath: uploadData['imagePath'],
         price: price,
         userEmail: _authenticatedUser.email,
         userId: _authenticatedUser.id,
@@ -93,15 +137,27 @@ mixin ProductsModel on ConnectedProductsModel {
     }
   }
 
-  Future<bool> updateProduct(
-      String title, String description, String image, double price, LocationData locData) {
+  Future<bool> updateProduct(String title, String description, File image,
+      double price, LocationData locData) async {
     _isLoading = true;
     notifyListeners();
+    String imageUrl = selectedProduct.image;
+    String imagePath = selectedProduct.imagePath;
+    if (image != null) {
+      final uploadData = await uploadImage(image);
+      if (uploadData == null) {
+        print('Upload fail');
+        return false;
+      }
+      imageUrl = uploadData['imageUrl'];
+      imagePath = uploadData['imagePath'];
+    }
+
     final Map<String, dynamic> updateData = {
       'title': title,
       'description': description,
-      'image':
-          'https://www.capetownetc.com/wp-content/uploads/2018/06/Choc_1.jpeg',
+      'imageUrl': imageUrl,
+      'imagePath': imagePath,
       'price': price,
       'userEmail': selectedProduct.userEmail,
       'userId': selectedProduct.userId,
@@ -109,32 +165,32 @@ mixin ProductsModel on ConnectedProductsModel {
       'loc_lat': locData.latitude,
       'loc_lng': locData.longitude,
     };
-    return http
-        .put(
-            'https://flutter-product-fe28f.firebaseio.com/products/${selectedProduct.id}.json?auth=${_authenticatedUser.token}',
-            body: json.encode(updateData))
-        .then((http.Response response) {
+    try {
+      await http.put(
+          'https://flutter-product-fe28f.firebaseio.com/products/${selectedProduct.id}.json?auth=${_authenticatedUser.token}',
+          body: json.encode(updateData));
+
       _isLoading = false;
       final Product updatedProduct = Product(
-        id: selectedProduct.id,
-        title: title,
-        description: description,
-        image: image,
-        price: price,
-        userEmail: selectedProduct.userEmail,
-        userId: selectedProduct.userId,
-        location: locData
-      );
+          id: selectedProduct.id,
+          title: title,
+          description: description,
+          image: imageUrl,
+          imagePath: imagePath,
+          price: price,
+          userEmail: selectedProduct.userEmail,
+          userId: selectedProduct.userId,
+          location: locData);
 
       _products[selectedProductIndex] = updatedProduct;
 
       notifyListeners();
       return true;
-    }).catchError((error) {
+    } catch (err) {
       _isLoading = false;
       notifyListeners();
       return false;
-    });
+    }
   }
 
   Future<bool> deleteProduct() {
@@ -169,9 +225,11 @@ mixin ProductsModel on ConnectedProductsModel {
     }
   }
 
-  Future<Null> fetchProducts({onlyForUser = false}) {
+  Future<Null> fetchProducts({onlyForUser = false, clearExisting = false}) {
     _isLoading = true;
-
+    if (clearExisting) {
+      _products = [];
+    }
     return http
         .get(
             'https://flutter-product-fe28f.firebaseio.com/products.json?auth=${_authenticatedUser.token}')
@@ -189,7 +247,8 @@ mixin ProductsModel on ConnectedProductsModel {
             id: productId,
             title: productData['title'],
             description: productData['description'],
-            image: productData['image'],
+            image: productData['imageUrl'],
+            imagePath: productData['imagePath'],
             price: productData['price'],
             location: LocationData(productData['loc_lat'],
                 productData['loc_lng'], productData['loc_address']),
@@ -227,6 +286,7 @@ mixin ProductsModel on ConnectedProductsModel {
         price: selectedProduct.price,
         location: selectedProduct.location,
         image: selectedProduct.image,
+        imagePath: selectedProduct.imagePath,
         isFavorite: newFavouriteStatus,
         userId: selectedProduct.userId,
         userEmail: selectedProduct.userEmail);
@@ -251,6 +311,7 @@ mixin ProductsModel on ConnectedProductsModel {
           price: selectedProduct.price,
           location: selectedProduct.location,
           image: selectedProduct.image,
+          imagePath: selectedProduct.imagePath,
           isFavorite: !newFavouriteStatus,
           userId: selectedProduct.userId,
           userEmail: selectedProduct.userEmail);
@@ -258,6 +319,7 @@ mixin ProductsModel on ConnectedProductsModel {
 
       notifyListeners();
     }
+    _selProductId = null;
   }
 
   void toggleDisplayMode() {
@@ -382,6 +444,7 @@ mixin UserModel on ConnectedProductsModel {
     _authenticatedUser = null;
     _authTimer.cancel();
     _userSubject.add(false);
+    _selProductId = null;
     final SharedPreferences prefs = await SharedPreferences.getInstance();
     prefs.remove('token');
     prefs.remove('userEmail');
